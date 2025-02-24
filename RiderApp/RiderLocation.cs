@@ -1,22 +1,24 @@
-﻿namespace RiderApp;
+﻿using System.Text.Json.Serialization;
 
-internal abstract class Location
+namespace RiderApp;
+
+public abstract class Location
 {
     public double Latitude { get; set; }
     public double Longitude { get; set; }
 }
 
-internal sealed class RiderLocation : Location
+public sealed class RiderLocation : Location
 {
 
 }
 
-internal sealed class DriverLocation : Location
+public sealed class DriverLocation : Location
 {
 
 }
 
-internal sealed class NearbyDriver : Location
+public sealed class NearbyDriver : Location
 {
-    internal string DriverKey { get; set;}
+    public string DriverKey { get; set;}
 }

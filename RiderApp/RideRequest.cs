@@ -1,11 +1,11 @@
 ﻿namespace RiderApp;
 
-internal sealed class RideRequest
+public sealed class RideRequest
 {
     public RideRequestDriverInfo Driver { get; set; }
 }
 
-internal sealed class RideRequestDriverInfo
+public sealed class RideRequestDriverInfo
 {
     public string FirstName { get; set; }
     public string LastName { get; set; }

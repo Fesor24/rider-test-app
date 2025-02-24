@@ -1,9 +1,9 @@
 ﻿using System.Text.Json;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace RiderApp;
-
-internal sealed class RideHubService : IDisposable
+public sealed class RideHubService : IDisposable
 {
     private HubConnection _rideHub;
 
@@ -20,7 +20,10 @@ internal sealed class RideHubService : IDisposable
             .WithUrl(_connectionUrl, options =>
             {
                 options.Headers.Add("Authorization", "Bearer " + _accessToken);
-            }).Build();
+            })
+            .AddMessagePackProtocol()
+            .WithKeepAliveInterval(TimeSpan.FromSeconds(20))
+            .Build();
 
         SubscribeToRideRequestUpdates();
         SubscribeToChatRequestUpdates();
@@ -33,6 +36,8 @@ internal sealed class RideHubService : IDisposable
 
     public async Task Chat(string message)
     {
+        if (_rideId == default) return;
+
         SendChatMessage rideChat = new()
         {
             RideId = _rideId,
@@ -84,7 +89,7 @@ internal sealed class RideHubService : IDisposable
     {
         _rideHub.On<DriverLocation>("ReceiveLocationUpdate", (request) =>
         {
-            Console.ForegroundColor = ConsoleColor.Green;
+            Console.ForegroundColor = ConsoleColor.Blue;
             Console.WriteLine("Driver location update:");
             Console.WriteLine($"Latitude: {request.Latitude}");
             Console.WriteLine($"Longitude: {request.Longitude}");
@@ -96,7 +101,7 @@ internal sealed class RideHubService : IDisposable
     {
         _rideHub.On<NearbyDriver>("ReceiveNearbyDrivers", (request) =>
         {
-            Console.ForegroundColor = ConsoleColor.Green;
+            Console.ForegroundColor = ConsoleColor.Blue;
             Console.WriteLine("Nearby driver location update:");
             Console.WriteLine($"Latitude: {request.Latitude}");
             Console.WriteLine($"Longitude: {request.Longitude}");
@@ -111,16 +116,9 @@ internal sealed class RideHubService : IDisposable
         {
             Console.WriteLine($"Update event: {request.Update}");
 
-            if (request.Update == "Accepted")
+            if (request.Update == ReceiveRideUpdate.Accepted)
             {
-                var data = JsonSerializer.Deserialize<AcceptRide>(request.Data, new JsonSerializerOptions
-                {
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                });
-
-                if (data is null) return;
-
-                _rideId = data.Ride.RideId;
+                var data = JsonSerializer.Deserialize<AcceptRide>(request.Data) ?? new();
 
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine("Ride accepted. Details");
@@ -129,35 +127,49 @@ internal sealed class RideHubService : IDisposable
                 Console.WriteLine($"Cab: Manufacturer -> {data.Cab.Manufacturer}; Color -> {data.Cab.Color}");
                 Console.WriteLine($"Location: Lat -> {data.DriverLocation.Latitude}; Long -> {data.DriverLocation.Longitude}");
                 Console.ForegroundColor = ConsoleColor.White;
+
+                Console.WriteLine($"This is ride id: {_rideId}");
             }
 
-            if (request.Update == "NoMatch")
+            if(request.Update == ReceiveRideUpdate.Started)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("No match for ride request");
+                var data = JsonSerializer.Deserialize<DefaultUpdate>(request.Data) ?? new();
+
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine(data.Message);
                 Console.ForegroundColor = ConsoleColor.White;
             }
 
-            if (request.Update == "DriverArrived")
+            if(request.Update == ReceiveRideUpdate.DriverArrived)
             {
+                var data = JsonSerializer.Deserialize<DriverArrivedUpdate>(request.Data) ?? new();
+
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Your ride is here");
+                Console.WriteLine(data.Message);
+                Console.WriteLine(data.WaitingTimeInMinutes);
                 Console.ForegroundColor = ConsoleColor.White;
             }
 
-            if (request.Update == "Started")
+            if(request.Update == ReceiveRideUpdate.Ended)
             {
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Ride started");
-                Console.ForegroundColor = ConsoleColor.White;
-            }
+                var data = JsonSerializer.Deserialize<EndRideUpdate>(request.Data) ?? new();
 
-            if (request.Update == "Ended")
-            {
                 Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("Source: " + data.Source);
+                Console.WriteLine("Destination: " + data.Destination);
                 Console.WriteLine("Ride ended");
                 Console.ForegroundColor = ConsoleColor.White;
             }
+
+            if(request.Update == ReceiveRideUpdate.NoMatch)
+            {
+                var data = JsonSerializer.Deserialize<DefaultUpdate>(request.Data) ?? new();
+
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(data.Message);
+                Console.ForegroundColor = ConsoleColor.White;
+            }
+            
         });
     }
 

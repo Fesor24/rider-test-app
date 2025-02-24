@@ -1,6 +1,6 @@
 ﻿namespace RiderApp;
 
-internal class Chat
+public class Chat
 {
     public string Recipient { get; set; }
     public string Sender { get; set; }
@@ -8,12 +8,12 @@ internal class Chat
     public DateTime CreatedAt { get; set; }
 }
 
-internal sealed class RideChat
+public sealed class RideChat
 {
     public List<Chat> Chats { get; set; } = [];
 }
 
-internal sealed class SendChatMessage
+public sealed class SendChatMessage
 {
     public string Message { set; get; }
     public long RideId { get; set; }
