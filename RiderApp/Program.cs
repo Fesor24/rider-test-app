@@ -2,31 +2,52 @@
 
 Console.WriteLine("Riders app!!!");
 
-string baseUrl = "https://localhost:7175";
+string baseUrl = "https://stagingapi.soloride.app";
 
-// paste riders access token here...
-string accessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJodHRwczovL2Rldi5zb2xvcmlkZS5hcHAiLCJpc3MiOiJodHRwczovL2Rldi5zb2xvcmlkZS5hcHAiLCJleHAiOjUzNDAzODcwODEsImlhdCI6MTc0MDM4NzA4MSwibmJmIjoxNzQwMzg3MDgxLCJlbWFpbCI6ImZlc29yQG1haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZWlkZW50aWZpZXIiOiJSSURFUklELTEiLCJyaWRlciI6IjEiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJSaWRlciJ9.wITrTg56xWhtuTcWWI2i5Vb979j4cOb8R0FWqWpqMOg";
+Console.WriteLine("Paste riders access token below: ");
+
+string? accessToken = Console.ReadLine();
+
+while (string.IsNullOrWhiteSpace(accessToken))
+    accessToken = Console.ReadLine();
+
+Console.Clear();
+
+Console.WriteLine("To get nearby drivers. Input location information below:");
+Console.WriteLine("Your Latitude: ");
+if (!double.TryParse(Console.ReadLine(), out double lat)) lat = 0;
+
+Console.WriteLine("Your Longitude: ");
+if(!double.TryParse(Console.ReadLine(), out double longitude)) longitude = 0;
 
 using var rideHubService = new RideHubService(baseUrl, accessToken);
 
-await rideHubService.StartAsync();
+Task nearbyDriverTask = GetNearbyDrivers();
 
-Task nearbyDriverTask = rideHubService.GetNearbyDrivers();
-
-Task chatTask = Task.Run(async () => await Chat());
+Task chatTask = Chat();
 
 await Task.WhenAll(nearbyDriverTask, chatTask);
 
 async Task Chat()
 {
     Console.WriteLine("Enter a message to chat if there's a ride match: ");
-    string message = await Task.Run(() => Console.ReadLine() ?? "");
+    string message = await Console.In.ReadLineAsync() ?? "";
 
     while (!string.IsNullOrWhiteSpace(message))
     {
         await rideHubService.Chat(message);
 
         Console.WriteLine("Enter a message: ");
-        message = await Task.Run(() => Console.ReadLine() ?? "");
+        message = await Console.In.ReadLineAsync() ?? "";
+    }
+}
+
+async Task GetNearbyDrivers()
+{
+    while (true)
+    {
+        await rideHubService.GetNearbyDrivers(lat, longitude);
+
+        await Task.Delay(60000 * 3); // 3 mins...
     }
 }

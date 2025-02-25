@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using AsyncAwaitBestPractices;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -30,13 +31,15 @@ public sealed class RideHubService : IDisposable
         SubscribeToLocationUpdates();
         SubscribeToNearbyDrivers();
         SubscribeToRideUpdates();
+
+        StartAsync().SafeFireAndForget<Exception>(ex => Console.WriteLine($"An error occurred. {ex.Message}"));
     }
 
-    public async Task StartAsync() => await _rideHub.StartAsync();
+    private async Task StartAsync() => await _rideHub.StartAsync();
 
-    public async Task Chat(string message)
+    public Task Chat(string message)
     {
-        if (_rideId == default) return;
+        if (_rideId == default) return Task.CompletedTask;
 
         SendChatMessage rideChat = new()
         {
@@ -44,18 +47,18 @@ public sealed class RideHubService : IDisposable
             Message = message
         };
 
-        await _rideHub.InvokeAsync("Chat", rideChat, CancellationToken.None);
+        return _rideHub.InvokeAsync("Chat", rideChat, CancellationToken.None);
     }
 
-    public async Task GetNearbyDrivers()
+    public Task GetNearbyDrivers(double latitude, double longitude)
     {
         RiderLocation riderLocation = new()
         {
-            Longitude = 3.3898,
-            Latitude = 6.5158
+            Longitude = longitude,
+            Latitude = latitude
         };
 
-        await _rideHub.InvokeAsync("GetNearbyDrivers", riderLocation, CancellationToken.None);
+        return _rideHub.InvokeAsync("GetNearbyDrivers", riderLocation, CancellationToken.None);
     }
 
     private void SubscribeToRideRequestUpdates()
@@ -78,7 +81,7 @@ public sealed class RideHubService : IDisposable
             Console.WriteLine("Chats received");
             foreach (var chat in request.Chats)
             {
-                Console.WriteLine($"{chat.Sender} to {chat.Recipient}: {chat.Message}");
+                Console.WriteLine($"{chat.Sender}: {chat.Message}");
             }
 
             Console.ForegroundColor = ConsoleColor.White;
@@ -127,8 +130,7 @@ public sealed class RideHubService : IDisposable
                 Console.WriteLine($"Cab: Manufacturer -> {data.Cab.Manufacturer}; Color -> {data.Cab.Color}");
                 Console.WriteLine($"Location: Lat -> {data.DriverLocation.Latitude}; Long -> {data.DriverLocation.Longitude}");
                 Console.ForegroundColor = ConsoleColor.White;
-
-                Console.WriteLine($"This is ride id: {_rideId}");
+                _rideId = data.Ride.RideId;
             }
 
             if(request.Update == ReceiveRideUpdate.Started)
@@ -175,7 +177,7 @@ public sealed class RideHubService : IDisposable
 
     private void Close()
     {
-        _rideHub.StopAsync();
+        _rideHub.StopAsync().SafeFireAndForget();
     }
 
     public void Dispose()
