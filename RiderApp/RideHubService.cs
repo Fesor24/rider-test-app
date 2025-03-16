@@ -171,6 +171,15 @@ public sealed class RideHubService : IDisposable
                 Console.WriteLine(data.Message);
                 Console.ForegroundColor = ConsoleColor.White;
             }
+
+            if(request.Update == ReceiveRideUpdate.WaitTimeExtensionStatus)
+            {
+                var data = JsonSerializer.Deserialize<DefaultUpdate>(request.Data) ?? new();
+
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine(data.Message);
+                Console.ForegroundColor = ConsoleColor.White;
+            }
             
         });
     }

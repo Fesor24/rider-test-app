@@ -63,4 +63,6 @@ public static class ReceiveRideUpdate
     public static string Ended = nameof(Ended);
     public static string Reassigned = nameof(Reassigned);
     public static string Rerouted = nameof(Rerouted);
+    public static string WaitTimeExtensionStatus = nameof(WaitTimeExtensionStatus);
+    public static string RequestWaitTimeExtension = nameof(RequestWaitTimeExtension);
 }
