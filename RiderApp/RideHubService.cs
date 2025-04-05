@@ -32,6 +32,7 @@ public sealed class RideHubService : IDisposable
         SubscribeToNearbyDrivers();
         SubscribeToRideUpdates();
         SubscribeToCallNotification();
+        SubscribeToEmailVerificationNotification();
 
         //StartAsync().SafeFireAndForget<Exception>(ex => Console.WriteLine($"An error occurred. {ex.Message}"));
     }
@@ -194,6 +195,18 @@ public sealed class RideHubService : IDisposable
             Console.WriteLine($"Caller: {request.CallerInfo.Caller}");
             Console.WriteLine($"Caller name: {request.CallerInfo.Name}");
             Console.WriteLine($"Caller image: {request.CallerInfo.ProfileImage}");
+            Console.ForegroundColor = ConsoleColor.White;
+        });
+    }
+
+    private void SubscribeToEmailVerificationNotification()
+    {
+        _rideHub.On<EmailVerificationMessage>("EmailVerificationUpdate", (request) =>
+        {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("Email verification update:");
+            Console.WriteLine($"Email: {request.Message}");
+            Console.WriteLine($"Verification status: {request.Verified}");
             Console.ForegroundColor = ConsoleColor.White;
         });
     }

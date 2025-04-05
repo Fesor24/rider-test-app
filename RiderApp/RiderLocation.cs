@@ -46,3 +46,10 @@ public class CallInfo
     public string Token { get; set; }
     public string Channel { get; set; }
 }
+
+public class EmailVerificationMessage
+{
+    public string Message { get; set; }
+    public bool Verified { get; set; }
+}
+
